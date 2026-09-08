@@ -9,6 +9,7 @@
     "dev:web": "vite",
     "dev:electron": "wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "build:web": "vite build",
+    "dist:win": "npm run build:web && electron-builder --win nsis",
     "start": "electron ."
   },
   "dependencies": {
@@ -22,8 +23,25 @@
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
     "electron": "^31.0.2",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",
     "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.sakura.launcher",
+    "productName": "Sakura Launcher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "SakuraLauncher-Setup-${version}.${ext}"
+    }
   }
 }
