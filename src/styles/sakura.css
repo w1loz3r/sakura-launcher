@@ -140,6 +140,9 @@ select, input[type="range"] {
   border-radius: 12px;
   padding: 12px;
   color: #ffdff0;
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
 }
 
 .petal {
