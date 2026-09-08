@@ -6,7 +6,6 @@ on:
 jobs:
   build-win:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -14,18 +13,8 @@ jobs:
         with:
           node-version: 24
 
-      - name: Debug files
-        run: |
-          echo "=== ROOT ==="
-          dir
-          echo "=== package.json ==="
-          type package.json
-
-      - name: Install deps
-        run: npm install --no-package-lock
-
-      - name: Build EXE
-        run: npm run dist:win
+      - run: npm install --no-package-lock
+      - run: npm run dist:win
 
       - uses: actions/upload-artifact@v4
         with:
