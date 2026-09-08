@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build:web": "vite build",
+    "dist:win": "npm run build:web && electron-builder --win nsis"
+  }
+}
