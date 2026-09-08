@@ -5,9 +5,9 @@ type Tab = 'home' | 'news' | 'settings' | 'mods';
 declare global {
   interface Window {
     launcherApi?: {
-      play: (payload?: { version: string; ram: number }) => Promise<{ ok: boolean; message: string }>;
-      getConfig: () => Promise<{ version: string; ram: number }>;
-      saveConfig: (patch: { version: string; ram: number }) => Promise<{ ok: boolean; config: { version: string; ram: number } }>;
+      getConfig: () => Promise<{ version: string; ram: number; nickname: string }>;
+      saveConfig: (patch: { version: string; ram: number; nickname: string }) => Promise<{ ok: boolean }>;
+      play: (payload: { version: string; ram: number; nickname: string }) => Promise<{ ok: boolean; message: string }>;
       onLog: (cb: (msg: string) => void) => void;
     };
   }
@@ -18,14 +18,16 @@ export default function App() {
   const [log, setLog] = useState('Готов к запуску 🌸');
   const [ram, setRam] = useState(4096);
   const [version, setVersion] = useState('1.20.1');
+  const [nickname, setNickname] = useState('SakuraPlayer');
 
-  const petals = useMemo(() => Array.from({ length: 22 }, (_, i) => i), []);
+  const petals = useMemo(() => Array.from({ length: 28 }, (_, i) => i), []);
 
   useEffect(() => {
     window.launcherApi?.getConfig?.().then((cfg) => {
       if (!cfg) return;
       setVersion(cfg.version ?? '1.20.1');
       setRam(Number(cfg.ram ?? 4096));
+      setNickname(cfg.nickname ?? 'SakuraPlayer');
     });
 
     window.launcherApi?.onLog?.((msg) => {
@@ -34,15 +36,17 @@ export default function App() {
   }, []);
 
   async function onPlay() {
-    setLog('Проверка и запуск...');
-    await window.launcherApi?.saveConfig?.({ version, ram });
-    const res = await window.launcherApi?.play?.({ version, ram });
-    setLog((prev) => `${prev}\n${res?.message ?? 'Не удалось вызвать launcherApi'}`);
+    setLog('Сохраняю профиль и запускаю...');
+    await window.launcherApi?.saveConfig?.({ version, ram, nickname });
+    const res = await window.launcherApi?.play?.({ version, ram, nickname });
+    setLog((prev) => `${prev}\n${res?.message ?? 'Ошибка IPC'}`);
   }
 
   return (
     <div className="app">
       <div className="bg-gradient" />
+      <div className="glow glow1" />
+      <div className="glow glow2" />
       <div className="moon" />
 
       {petals.map((p) => (
@@ -52,17 +56,23 @@ export default function App() {
           style={
             {
               '--x': `${Math.random() * 100}%`,
-              '--d': `${8 + Math.random() * 8}s`,
+              '--d': `${7 + Math.random() * 9}s`,
               '--delay': `${Math.random() * 6}s`,
-              '--r': `${Math.random() * 360}deg`
+              '--r': `${Math.random() * 360}deg`,
+              '--s': `${0.8 + Math.random() * 0.8}`
             } as React.CSSProperties
           }
         />
       ))}
 
       <aside className="sidebar glass">
-        <h1>SAKURA</h1>
-        <p className="subtitle">Launcher</p>
+        <div className="brand">
+          <div className="logo">🌸</div>
+          <div>
+            <h1>SAKURA</h1>
+            <p className="subtitle">Launcher</p>
+          </div>
+        </div>
 
         <nav>
           <button className={tab === 'home' ? 'active' : ''} onClick={() => setTab('home')}>Главная</button>
@@ -71,14 +81,19 @@ export default function App() {
           <button className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>Настройки</button>
         </nav>
 
-        <div className="footer-note">made with 🌸</div>
+        <div className="footer-note">made with love & petals</div>
       </aside>
 
       <main className="content">
         {tab === 'home' && (
           <section className="panel glass">
             <h2>Добро пожаловать</h2>
-            <p>Минималистичный лаунчер в эстетике сакуры.</p>
+            <p>Эстетичный лаунчер с профилем, запуском и логами.</p>
+
+            <div className="row">
+              <label>Никнейм</label>
+              <input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Введите ник" />
+            </div>
 
             <div className="row">
               <label>Версия</label>
@@ -110,9 +125,9 @@ export default function App() {
           <section className="panel glass">
             <h2>Новости</h2>
             <ul>
-              <li>🌸 Новый весенний интерфейс</li>
-              <li>⚙️ Скоро: Microsoft OAuth</li>
-              <li>🧩 Скоро: менеджер модпаков</li>
+              <li>🌸 Новый Sakura Pro интерфейс</li>
+              <li>🎮 Реальный запуск через minecraft-launcher-core</li>
+              <li>🔐 Следующий шаг: Microsoft OAuth</li>
             </ul>
           </section>
         )}
@@ -120,14 +135,14 @@ export default function App() {
         {tab === 'mods' && (
           <section className="panel glass">
             <h2>Моды</h2>
-            <p>Здесь будет каталог модов и импорт .mrpack</p>
+            <p>В следующем обновлении: импорт .mrpack и менеджер профилей.</p>
           </section>
         )}
 
         {tab === 'settings' && (
           <section className="panel glass">
             <h2>Настройки</h2>
-            <p>Java path, папка игры, параметры запуска и т.д.</p>
+            <p>Сейчас сохраняются: ник, версия и RAM в JSON-файл профиля.</p>
           </section>
         )}
       </main>
