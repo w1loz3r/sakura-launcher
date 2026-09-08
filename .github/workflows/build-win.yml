@@ -2,31 +2,32 @@ name: Build Windows EXE
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "main" ]
 
 jobs:
   build-win:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+
+      - name: Debug files
+        run: |
+          echo "=== ROOT ==="
+          dir
+          echo "=== package.json ==="
+          type package.json
 
       - name: Install deps
-        run: npm install
+        run: npm install --no-package-lock
 
       - name: Build EXE
         run: npm run dist:win
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: SakuraLauncher-Windows
           path: release/*.exe
