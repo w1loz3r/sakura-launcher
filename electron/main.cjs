@@ -16,13 +16,11 @@ function ensureDirs() {
 
 function readConfig() {
   ensureDirs();
-  const defaults = { version: '1.20.1', ram: 4096 };
-
+  const defaults = { version: '1.20.1', ram: 4096, nickname: 'SakuraPlayer' };
   if (!fs.existsSync(CFG_PATH)) {
     fs.writeFileSync(CFG_PATH, JSON.stringify(defaults, null, 2), 'utf8');
     return defaults;
   }
-
   try {
     const raw = fs.readFileSync(CFG_PATH, 'utf8');
     return { ...defaults, ...JSON.parse(raw) };
@@ -38,10 +36,10 @@ function writeConfig(next) {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 1200,
-    height: 760,
-    minWidth: 980,
-    minHeight: 640,
+    width: 1280,
+    height: 800,
+    minWidth: 1000,
+    minHeight: 680,
     title: 'Sakura Launcher',
     backgroundColor: '#120f1f',
     webPreferences: {
@@ -51,12 +49,13 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, '../dist/index.html'));
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) win.loadURL(devUrl);
+  else win.loadFile(path.join(__dirname, '../dist/index.html'));
 }
 
 app.whenReady().then(() => {
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -66,16 +65,15 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-ipcMain.handle('launcher:getConfig', async () => {
-  return readConfig();
-});
+ipcMain.handle('launcher:getConfig', async () => readConfig());
 
 ipcMain.handle('launcher:saveConfig', async (_event, patch) => {
   const prev = readConfig();
   const next = {
     ...prev,
     version: String(patch?.version ?? prev.version),
-    ram: Number(patch?.ram ?? prev.ram)
+    ram: Number(patch?.ram ?? prev.ram),
+    nickname: String(patch?.nickname ?? prev.nickname)
   };
   writeConfig(next);
   return { ok: true, config: next };
@@ -83,8 +81,9 @@ ipcMain.handle('launcher:saveConfig', async (_event, patch) => {
 
 ipcMain.handle('launcher:play', async (_event, payload) => {
   const cfg = readConfig();
-  const version = String(payload?.version ?? cfg.version ?? '1.20.1');
-  const ram = Number(payload?.ram ?? cfg.ram ?? 4096);
+  const version = String(payload?.version ?? cfg.version);
+  const ram = Number(payload?.ram ?? cfg.ram);
+  const nickname = String(payload?.nickname ?? cfg.nickname);
 
   const launcher = new Client();
 
@@ -93,32 +92,20 @@ ipcMain.handle('launcher:play', async (_event, payload) => {
       access_token: '0',
       client_token: '0',
       uuid: '00000000-0000-0000-0000-000000000000',
-      name: 'SakuraPlayer',
+      name: nickname,
       user_properties: '{}',
       meta: { type: 'mojang' }
     },
     root: GAME_DIR,
-    version: {
-      number: version,
-      type: 'release'
-    },
-    memory: {
-      max: `${ram}M`,
-      min: '1024M'
-    }
+    version: { number: version, type: 'release' },
+    memory: { max: `${ram}M`, min: '1024M' }
   };
 
   return new Promise((resolve) => {
     let resolved = false;
 
-    launcher.on('debug', (e) => {
-      if (!resolved) win?.webContents.send('launcher:log', `[debug] ${String(e)}`);
-    });
-
-    launcher.on('data', (e) => {
-      if (!resolved) win?.webContents.send('launcher:log', `[mc] ${String(e)}`);
-    });
-
+    launcher.on('debug', (e) => win?.webContents.send('launcher:log', `[debug] ${String(e)}`));
+    launcher.on('data', (e) => win?.webContents.send('launcher:log', `[mc] ${String(e)}`));
     launcher.on('error', (e) => {
       if (!resolved) {
         resolved = true;
@@ -130,7 +117,7 @@ ipcMain.handle('launcher:play', async (_event, payload) => {
       launcher.launch(opts);
       if (!resolved) {
         resolved = true;
-        resolve({ ok: true, message: `Запуск Minecraft ${version} (RAM ${ram}MB)...` });
+        resolve({ ok: true, message: `Запуск ${version} от имени ${nickname}...` });
       }
     } catch (e) {
       if (!resolved) {
