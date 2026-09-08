@@ -1,8 +1,8 @@
 {
   "name": "sakura-launcher",
   "private": true,
-  "version": "0.0.1",
-  "description": "Sakura-themed desktop launcher (Electron + React + Vite)",
+  "version": "0.1.0",
+  "description": "Sakura Launcher (Electron + React + Vite)",
   "author": "w1loz3r",
   "type": "module",
   "main": "electron/main.cjs",
