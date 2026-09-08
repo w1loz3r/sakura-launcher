@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type Tab = 'home' | 'news' | 'settings' | 'mods';
 
 declare global {
   interface Window {
     launcherApi?: {
-      play: () => Promise<{ ok: boolean; message: string }>;
+      play: (payload?: { version: string; ram: number }) => Promise<{ ok: boolean; message: string }>;
+      getConfig: () => Promise<{ version: string; ram: number }>;
+      saveConfig: (patch: { version: string; ram: number }) => Promise<{ ok: boolean; config: { version: string; ram: number } }>;
+      onLog: (cb: (msg: string) => void) => void;
     };
   }
 }
@@ -18,10 +21,23 @@ export default function App() {
 
   const petals = useMemo(() => Array.from({ length: 22 }, (_, i) => i), []);
 
+  useEffect(() => {
+    window.launcherApi?.getConfig?.().then((cfg) => {
+      if (!cfg) return;
+      setVersion(cfg.version ?? '1.20.1');
+      setRam(Number(cfg.ram ?? 4096));
+    });
+
+    window.launcherApi?.onLog?.((msg) => {
+      setLog((prev) => `${prev}\n${msg}`);
+    });
+  }, []);
+
   async function onPlay() {
-    setLog('Проверка файлов...');
-    const res = await window.launcherApi?.play?.();
-    setLog(res?.message ?? 'Не удалось вызвать launcherApi');
+    setLog('Проверка и запуск...');
+    await window.launcherApi?.saveConfig?.({ version, ram });
+    const res = await window.launcherApi?.play?.({ version, ram });
+    setLog((prev) => `${prev}\n${res?.message ?? 'Не удалось вызвать launcherApi'}`);
   }
 
   return (
@@ -95,7 +111,7 @@ export default function App() {
             <h2>Новости</h2>
             <ul>
               <li>🌸 Новый весенний интерфейс</li>
-              <li>⚙️ Скоро: автообновления</li>
+              <li>⚙️ Скоро: Microsoft OAuth</li>
               <li>🧩 Скоро: менеджер модпаков</li>
             </ul>
           </section>
